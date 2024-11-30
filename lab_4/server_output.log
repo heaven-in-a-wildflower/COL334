@@ -1,0 +1,12 @@
+Server listening on 10.0.0.1:6555
+Waiting for client connection...
+Connection established with client ('10.0.0.2', 35488)
+Sent packet 0
+Received ack 1400
+Updated window size: 1802
+Sending last packet
+Sent packet 1400
+Received ack 1522
+Received last ack
+Sending last packet ack
+Closing server assuming client has the info
