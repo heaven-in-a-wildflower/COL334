@@ -107,9 +107,8 @@ Every target reads `config.json` from the part's directory.
 ### Part 3
 
 - The make targets use underscores (`run_aloha`), not the handout's `run-aloha`, and there is no `run` target.
-- `make plot` and `make run_all` call `plotx.py`, which is not in the repo, so the plot step fails.
-- In `config.json`, `input_file` is `input_543.txt`, which is not in the repo. Point it at `words.txt`.
-- `T` is set to `0.1`, but the code reads it as an `int`, which makes it `0`. ALOHA's slot calculation then divides by zero, and the backoff waits become zero. Set `T` to a whole number of milliseconds, 1 or more.
+- `make plot` and `make run_all` call `plotx.py`, which is not in the repo, so the plot step fails. Use the `run_*` targets.
+- `T` in `config.json` is the slot length and backoff unit in whole milliseconds, and the code reads it as an `int`. A fractional value such as `0.1` becomes `0`, which makes ALOHA divide by zero and makes every backoff wait zero. The config uses `T = 1`, the smallest value the report tested; the report also tried 5 and 50.
 
 ### Part 4
 
