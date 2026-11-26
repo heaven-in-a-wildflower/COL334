@@ -62,7 +62,9 @@ The server serves one request at a time. If a request arrives while another is b
 | BEB | `server_beb.cpp`, `client_beb.cpp` | The server tracks a busy flag and the time of the last collision, as the handout suggests. After its k-th collision a client waits i·T ms, with i drawn uniformly from [0, 2^min(k,10) − 1]. |
 | Sensing + BEB | `server_cscd.cpp`, `client_cscd.cpp` | The client sends `BUSY?\n`, and the server answers `BUSY\n` or `IDLE\n` without changing its state. On `BUSY` the client waits T ms and asks again. On `IDLE` it sends the data request. If it then gets `HUH!`, it falls back to BEB. |
 
-**Finding:** `results.json` holds 10 measurements per protocol, each an average completion time per client in ms. ALOHA rises from about 17 ms to about 338 ms across them, while BEB and sensing + BEB stay between roughly 3 and 15 ms. The report explains this as follows:
+`plotx.py` (run it with `make plot`) runs each protocol with n = 1 to 10 clients. It plots average completion time per client against n to `plot.png`, writes the numbers and the n values to `results.json`, and then restores `config.json`.
+
+**Finding:** the committed `results.json` comes from the original runs. It holds 10 measurements per protocol, each an average completion time per client in ms, but does not record the n values. ALOHA rises from about 17 ms to about 338 ms across them, while BEB and sensing + BEB stay between roughly 3 and 15 ms. The report explains this as follows:
 
 - ALOHA's efficiency stays close to 1/e, so it cannot keep up as clients are added.
 - Exponential backoff sharply reduces repeated collisions.
@@ -90,7 +92,7 @@ Requirements: Linux, `g++` with C++17 and pthreads, Python 3 with `numpy` and `m
 | --- | --- |
 | part1 | `make build`, `make run` (one server and one client), `make plot` |
 | part2 | `make build`, `make run`, `make plot` |
-| part3 | `make build`, `make run_aloha`, `make run_beb`, `make run_cscd`, `make run_all` |
+| part3 | `make build`, `make run_aloha`, `make run_beb`, `make run_cscd`, `make run_all`, `make plot` |
 | part4 | `make build`, `make run-fifo`, `make run-rr`, `make run` (both), `make fairness`, `make plot`, `make plot-rogue` |
 
 Every target reads `config.json` from the part's directory.
@@ -107,7 +109,8 @@ Every target reads `config.json` from the part's directory.
 ### Part 3
 
 - The make targets use underscores (`run_aloha`), not the handout's `run-aloha`, and there is no `run` target.
-- `make plot` and `make run_all` call `plotx.py`, which is not in the repo, so the plot step fails. Use the `run_*` targets.
+- On Linux, every request takes about 41 ms, so one run takes about 40 s for any n and protocol, and the plot is nearly flat. The servers send each word with its own `send()`, and this matches the clash between Nagle's algorithm and delayed ACKs. In a test, setting `TCP_NODELAY` on the sensing server's accepted sockets cut a single client's download from about 40 s to about 0.1 s. A full `make plot` (30 runs) takes about 20–25 minutes.
+- On Linux, a server can keep running after its last client finishes, because closing the listening socket doesn't wake the thread blocked in `accept()`. I saw this with the sensing server, and the other two shut down the same way. After a `run_*` target, stop the server yourself. `make plot` stops each server it starts.
 - `T` in `config.json` is the slot length and backoff unit in whole milliseconds, and the code reads it as an `int`. A fractional value such as `0.1` becomes `0`, which makes ALOHA divide by zero and makes every backoff wait zero. The config uses `T = 1`, the smallest value the report tested; the report also tried 5 and 50.
 
 ### Part 4
