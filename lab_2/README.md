@@ -64,7 +64,13 @@ The server serves one request at a time. If a request arrives while another is b
 
 `plotx.py` (run it with `make plot`) runs each protocol with n = 1 to 10 clients. It plots average completion time per client against n to `plot.png`, writes the numbers and the n values to `results.json`, and then restores `config.json`.
 
-**Finding:** the committed `results.json` comes from the original runs. It holds 10 measurements per protocol, each an average completion time per client in ms, but does not record the n values. ALOHA rises from about 17 ms to about 338 ms across them, while BEB and sensing + BEB stay between roughly 3 and 15 ms. The report explains this as follows:
+**Finding:** the committed `results.json` comes from the original runs. It holds 10 measurements per protocol, each an average completion time per client in ms, but does not record the n values. ALOHA rises from about 17 ms to about 338 ms across them, while BEB and sensing + BEB stay between roughly 3 and 15 ms. A fresh `make plot` on Linux, after the `TCP_NODELAY` fix below and with `words.txt` and T = 1 ms, shows the same pattern:
+
+- ALOHA goes from about 1 s at n = 1 to about 23 s at n = 10.
+- BEB stays between about 0.06 and 0.6 s.
+- Sensing + BEB stays between about 0.17 and 1.2 s.
+
+The report explains this as follows:
 
 - ALOHA's efficiency stays close to 1/e, so it cannot keep up as clients are added.
 - Exponential backoff sharply reduces repeated collisions.
@@ -109,7 +115,7 @@ Every target reads `config.json` from the part's directory.
 ### Part 3
 
 - The make targets use underscores (`run_aloha`), not the handout's `run-aloha`, and there is no `run` target.
-- On Linux, every request takes about 41 ms, so one run takes about 40 s for any n and protocol, and the plot is nearly flat. The servers send each word with its own `send()`, and this matches the clash between Nagle's algorithm and delayed ACKs. In a test, setting `TCP_NODELAY` on the sensing server's accepted sockets cut a single client's download from about 40 s to about 0.1 s. A full `make plot` (30 runs) takes about 20–25 minutes.
+- The three servers set `TCP_NODELAY` on every client connection. They send each word with its own `send()`. Before this fix, Nagle's algorithm clashed with the clients' delayed ACKs, and on Linux every request stalled for about 41 ms. A run then took about 40 s whatever the protocol or n, so the plot came out flat. A full `make plot` (30 runs) now takes about 3 minutes. The servers in parts 1, 2 and 4 send words the same way and may have the same problem; I haven't tested them.
 - On Linux, a server can keep running after its last client finishes, because closing the listening socket doesn't wake the thread blocked in `accept()`. I saw this with the sensing server, and the other two shut down the same way. After a `run_*` target, stop the server yourself. `make plot` stops each server it starts.
 - `T` in `config.json` is the slot length and backoff unit in whole milliseconds, and the code reads it as an `int`. A fractional value such as `0.1` becomes `0`, which makes ALOHA divide by zero and makes every backoff wait zero. The config uses `T = 1`, the smallest value the report tested; the report also tried 5 and 50.
 

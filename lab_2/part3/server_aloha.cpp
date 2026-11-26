@@ -3,6 +3,7 @@
 #include <sstream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #include <cstring>
 #include <arpa/inet.h>
@@ -193,6 +194,11 @@ int main(){
             cerr << "Accept failed" << endl;
             return 0;
         }
+
+        // Send each word immediately: with Nagle's algorithm on, the client's
+        // delayed ACKs stall every request by ~40 ms (seen on Linux).
+        int nodelay = 1;
+        setsockopt(client_socket, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay));
 
         Info* info =  new Info;
         info->client_socket = client_socket;
